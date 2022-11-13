@@ -476,6 +476,7 @@ void CHud::Init()
 	m_SayText.Init();
 	m_Spectator.Init();
 	m_Geiger.Init();
+	m_SpriteOverlay.Init();
 	m_Train.Init();
 	m_Battery.Init();
 	m_Flash.Init();
@@ -644,6 +645,7 @@ void CHud::VidInit()
 	m_Health.VidInit();
 	m_Spectator.VidInit();
 	m_Geiger.VidInit();
+	m_SpriteOverlay.VidInit();
 	m_Train.VidInit();
 	m_Battery.VidInit();
 	m_Flash.VidInit();

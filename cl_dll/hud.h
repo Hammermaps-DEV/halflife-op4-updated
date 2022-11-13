@@ -187,6 +187,25 @@ private:
 //
 //-----------------------------------------------------
 //
+class CHudSpriteOverlay : public CHudBase
+{
+public:
+	int Init(void);
+	int VidInit(void);
+	int Draw(float flTime);
+	int MsgFunc_SprOverlay(const char* pszName, int iSize, void* pbuf);
+private:
+	float m_fOverlayStartTime;
+	float m_fOverlayStopTime;
+	HSPRITE m_hOverlaySprite;
+	int m_iFrameRate;
+	float m_fVerticalAlign;
+	float m_fHorizontalAlign;
+};
+
+//
+//-----------------------------------------------------
+//
 class CHudTrain : public CHudBase
 {
 public:
@@ -621,13 +640,13 @@ public:
 		return m_rgrcRects[index];
 	}
 
-
 	int GetSpriteIndex(const char* SpriteName); // gets a sprite index, for use in the m_rghSprites[] array
 
 	CHudAmmo m_Ammo;
 	CHudHealth m_Health;
 	CHudSpectator m_Spectator;
 	CHudGeiger m_Geiger;
+  CHudSpriteOverlay m_SpriteOverlay;
 	CHudBattery m_Battery;
 	CHudTrain m_Train;
 	CHudFlashlight m_Flash;
