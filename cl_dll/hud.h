@@ -22,6 +22,7 @@
 
 #pragma once
 
+#define FOG_LIMIT 30000
 #define RGB_YELLOWISH 0x00FFA000 //255,160,0
 #define RGB_REDISH 0x00FF1010	 //255,160,0
 #define RGB_GREENISH 0x0000A000	 //0,160,0
@@ -188,6 +189,25 @@ private:
 //
 //-----------------------------------------------------
 //
+class CHudSpriteOverlay : public CHudBase
+{
+public:
+	int Init(void);
+	int VidInit(void);
+	int Draw(float flTime);
+	int MsgFunc_SprOverlay(const char* pszName, int iSize, void* pbuf);
+private:
+	float m_fOverlayStartTime;
+	float m_fOverlayStopTime;
+	HSPRITE m_hOverlaySprite;
+	int m_iFrameRate;
+	float m_fVerticalAlign;
+	float m_fHorizontalAlign;
+};
+
+//
+//-----------------------------------------------------
+//
 class CHudTrain : public CHudBase
 {
 public:
@@ -343,6 +363,19 @@ private:
 	int m_iHeight; // width of the battery innards
 };
 
+
+//
+//-----------------------------------------------------
+//
+// (LRC) -- 30/08/02 November235: Particles to Order
+class CHudParticle : public CHudBase
+{
+public:
+	bool Init(void) override;
+	bool VidInit(void) override;
+	bool Draw(float flTime) override;
+	int MsgFunc_Particle(const char* pszName, int iSize, void* pbuf);
+};
 
 //
 //-----------------------------------------------------
@@ -576,11 +609,34 @@ private:
 	int m_iHealth;
 	int m_iArmor;
 	bool m_fFriendly;
+
+//LRC
+//methods actually defined in tri.cpp
+
+class CShinySurface
+{
+	float m_fMinX, m_fMinY, m_fMaxX, m_fMaxY, m_fZ;
+	char m_fScale;
+	float m_fAlpha; // texture scale and brighness
+	HSPRITE m_hsprSprite;
+	char m_szSprite[128];
+
+public:
+	CShinySurface* m_pNext;
+
+	CShinySurface(float fScale, float fAlpha, float fMinX, float fMaxX, float fMinY, float fMaxY, float fZ, char* szSprite);
+	~CShinySurface();
+
+	// draw the surface as seen from the given position
+	void Draw(const Vector& org);
+
+	void DrawAll(const Vector& org);
 };
 
 //
 //-----------------------------------------------------
 //
+
 class CHudScoreboard : public CHudBase
 {
 public:
@@ -612,6 +668,19 @@ public:
 	void GetAllPlayersInfo();
 };
 
+//LRC - for the moment, skymode has only two settings
+#define SKY_OFF 0
+#define SKY_ON_DRAWING 2
+#define SKY_ON 1
+
+typedef struct cl_mirror_s
+{
+	Vector origin;
+	int enabled;
+	float radius;
+	int type;
+} cl_mirror_t;
+
 class CHud
 {
 private:
@@ -640,6 +709,12 @@ public:
 	int m_iRes;
 	cvar_t* m_pCvarStealMouse;
 	cvar_t* m_pCvarDraw;
+	cvar_t* RainInfo;
+	CShinySurface* m_pShinySurface; //LRC
+	Vector m_vecSkyPos;				//LRC
+	int m_iSkyMode;					//LRC
+	int m_iSkyScale;				//AJH Allows parallax for the sky. 0 means no parallax, i.e infinitly large & far away.
+	int m_iCameraMode;				//G-Cont. clipping thirdperson camera
 
 	int m_iFontHeight;
 	int DrawHudNumber(int x, int y, int iFlags, int iNumber, int r, int g, int b);
@@ -647,6 +722,10 @@ public:
 	int DrawHudStringReverse(int xpos, int ypos, int iMinX, const char* szString, int r, int g, int b);
 	int DrawHudNumberString(int xpos, int ypos, int iMinX, int iNumber, int r, int g, int b);
 	int GetNumWidth(int iNumber, int iFlags);
+	int viewEntityIndex; // for trigger_viewset
+	int viewFlags;
+	struct cl_mirror_s Mirrors[32]; //Limit - 32 mirrors!
+	int numMirrors;
 
 	int GetHudNumberWidth(int number, int width, int flags);
 	int DrawHudNumberReverse(int x, int y, int number, int flags, int r, int g, int b);
@@ -665,6 +744,8 @@ public:
 	{
 		return (m_iWeaponBits & ~(1ULL << WEAPON_SUIT)) != 0;
 	}
+
+	int m_iHUDColor; //LRC
 
 private:
 	// the memory for these arrays are allocated in the first call to CHud::VidInit(), when the hud.txt and associated sprites are loaded.
@@ -686,13 +767,13 @@ public:
 		return m_rgrcRects[index];
 	}
 
-
 	int GetSpriteIndex(const char* SpriteName); // gets a sprite index, for use in the m_rghSprites[] array
 
 	CHudAmmo m_Ammo;
 	CHudHealth m_Health;
 	CHudSpectator m_Spectator;
 	CHudGeiger m_Geiger;
+  CHudSpriteOverlay m_SpriteOverlay;
 	CHudBattery m_Battery;
 	CHudTrain m_Train;
 	CHudFlashlight m_Flash;
@@ -705,6 +786,7 @@ public:
 	CHudAmmoSecondary m_AmmoSecondary;
 	CHudTextMessage m_TextMessage;
 	CHudStatusIcons m_StatusIcons;
+	CHudParticle m_Particle; // (LRC) -- 30/08/02 November235: Particles to Order
 
 	CHudFlagIcons m_FlagIcons;
 	CHudPlayerBrowse m_PlayerBrowse;
@@ -715,7 +797,7 @@ public:
 	bool Redraw(float flTime, bool intermission);
 	bool UpdateClientData(client_data_t* cdata, float time);
 
-	CHud() : m_iSpriteCount(0), m_pHudList(NULL) {}
+	CHud() : m_iSpriteCount(0), m_pHudList(NULL), m_pShinySurface(NULL) {}
 	~CHud(); // destructor, frees allocated memory
 
 	// user messages
@@ -728,6 +810,16 @@ public:
 	bool MsgFunc_SetFOV(const char* pszName, int iSize, void* pbuf);
 	bool MsgFunc_Concuss(const char* pszName, int iSize, void* pbuf);
 	bool MsgFunc_Weapons(const char* pszName, int iSize, void* pbuf);
+	bool MsgFunc_RainData(const char* pszName, int iSize, void* pbuf);	  //G-Cont
+	bool MsgFunc_PlayMP3(const char* pszName, int iSize, void* pbuf);	  //KILLAR
+	bool MsgFunc_HUDColor(const char* pszName, int iSize, void* pbuf);	  //LRC
+	void MsgFunc_SetFog(const char* pszName, int iSize, void* pbuf);	  //LRC
+	void MsgFunc_KeyedDLight(const char* pszName, int iSize, void* pbuf); //LRC
+	void MsgFunc_SetSky(const char* pszName, int iSize, void* pbuf);	  //LRC
+	bool MsgFunc_CamData(const char* pszName, int iSize, void* pbuf);	  //G-Cont
+	void MsgFunc_AddShine(const char* pszName, int iSize, void* pbuf);	  //LRC
+	bool MsgFunc_Inventory(const char* pszName, int iSize, void* pbuf);	  //AJH
+	void MsgFunc_ClampView(const char* pszName, int iSize, void* pbuf);	  //LRC 1.8
 
 	// Screen information
 	SCREENINFO m_scrinfo;
@@ -760,6 +852,19 @@ extern CHud gHUD;
 
 extern int g_iPlayerClass;
 extern int g_iTeamNumber;
+extern int g_iInventory[MAX_ITEMS]; //AJH Inventory system
 extern int g_iUser1;
 extern int g_iUser2;
 extern int g_iUser3;
+
+struct FogSettings
+{
+	float fogColor[3];
+	float startDist;
+	float endDist;
+};
+extern FogSettings g_fog;
+extern FogSettings g_fogPreFade;
+extern FogSettings g_fogPostFade;
+extern float g_fFogFadeDuration;
+extern float g_fFogFadeFraction;

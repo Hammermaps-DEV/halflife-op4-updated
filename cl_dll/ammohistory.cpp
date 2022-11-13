@@ -123,10 +123,8 @@ bool HistoryResource::DrawAmmoHistory(float flTime)
 				Rect rcPic;
 				HSPRITE* spr = gWR.GetAmmoPicFromWeapon(rgAmmoHistory[i].iId, rcPic);
 
-				int r, g, b;
-				r = giR;
-				g = giG;
-				b = giB;
+				UnpackRGB(r, g, b, gHUD.m_iHUDColor);
+
 				float scale = (rgAmmoHistory[i].DisplayTime - flTime) * 80;
 				ScaleColors(r, g, b, V_min(scale, 255));
 
@@ -149,10 +147,7 @@ bool HistoryResource::DrawAmmoHistory(float flTime)
 				if (!weap)
 					return true; // we don't know about the weapon yet, so don't draw anything
 
-				int r, g, b;
-				r = giR;
-				g = giG;
-				b = giB;
+				UnpackRGB(r, g, b, gHUD.m_iHUDColor);
 
 				/*
 				if ( !gWR.HasAmmo( weap ) )
@@ -176,9 +171,8 @@ bool HistoryResource::DrawAmmoHistory(float flTime)
 
 				Rect rect = gHUD.GetSpriteRect(rgAmmoHistory[i].iId);
 
-				r = giR;
-				g = giG;
-				b = giB;
+				UnpackRGB(r, g, b, gHUD.m_iHUDColor);
+
 				float scale = (rgAmmoHistory[i].DisplayTime - flTime) * 80;
 				ScaleColors(r, g, b, V_min(scale, 255));
 

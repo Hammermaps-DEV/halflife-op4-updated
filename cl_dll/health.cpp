@@ -154,9 +154,7 @@ void CHudHealth::GetPainColor(int& r, int& g, int& b)
 #else
 	if (m_iHealth > 25)
 	{
-		r = giR;
-		g = giG;
-		b = giB;
+		UnpackRGB(r, g, b, gHUD.m_iHUDColor);
 	}
 	else
 	{
@@ -238,7 +236,6 @@ bool CHudHealth::Draw(float flTime)
 
 		int iHeight = gHUD.m_iFontHeight;
 		int iWidth = HealthWidth / 10;
-
 		int barR, barG, barB;
 
 		if (gHUD.isNightVisionOn())
@@ -247,6 +244,7 @@ bool CHudHealth::Draw(float flTime)
 		}
 		else
 		{
+			UnpackRGB(barR, barG, barB, gHUD.m_iHUDColor); //LRC
 			barR = giR;
 			barG = giG;
 			barB = giB;
@@ -436,9 +434,7 @@ bool CHudHealth::DrawDamage(float flTime)
 	if (0 == m_bitsDamage)
 		return true;
 
-	r = giR;
-	g = giG;
-	b = giB;
+	UnpackRGB(r, g, b, gHUD.m_iHUDColor);
 
 	a = (int)(fabs(sin(flTime * 2)) * 256.0);
 

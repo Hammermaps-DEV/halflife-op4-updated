@@ -53,6 +53,7 @@ static CBasePlayer player;
 static globalvars_t Globals;
 
 static CBasePlayerWeapon* g_pWpns[MAX_WEAPONS];
+int g_iWaterLevel; //LRC - for DMC fog
 
 float g_flApplyVel = 0.0;
 bool g_irunninggausspred = false;
@@ -188,7 +189,7 @@ void HUD_PrepEntity(CBaseEntity* pEntity, CBasePlayer* pWeaponOwner)
 
 /*
 =====================
-CBaseEntity:: Killed
+CBaseEntity::Killed
 
 If weapons code "kills" an entity, just set its effects to EF_NODRAW
 =====================
@@ -198,9 +199,17 @@ void CBaseEntity::Killed(entvars_t* pevAttacker, int iGib)
 	pev->effects |= EF_NODRAW;
 }
 
+
+//LRC
+void CBasePlayerWeapon::SetNextThink(float delay)
+{
+	m_fNextThink = UTIL_WeaponTimeBase() + delay;
+	pev->nextthink = m_fNextThink;
+}
+
 /*
 =====================
-CBasePlayerWeapon:: DefaultDeploy
+CBasePlayerWeapon::DefaultDeploy
 
 =====================
 */
@@ -221,7 +230,7 @@ bool CBasePlayerWeapon::DefaultDeploy(const char* szViewModel, const char* szWea
 
 /*
 =====================
-CBasePlayerWeapon:: PlayEmptySound
+CBasePlayerWeapon::PlayEmptySound
 
 =====================
 */
@@ -345,6 +354,8 @@ void CBasePlayer::Killed(entvars_t* pevAttacker, int iGib)
 	if (m_pActiveItem)
 		m_pActiveItem->Holster();
 
+	m_pNextItem = NULL;
+
 	g_irunninggausspred = false;
 }
 
@@ -356,9 +367,13 @@ CBasePlayer::Spawn
 */
 void CBasePlayer::Spawn()
 {
-	if (m_pActiveItem)
+	if (m_pActiveItem && m_pNextItem)
+	{
+		m_pActiveItem = m_pNextItem;
 		m_pActiveItem->Deploy();
-
+		m_pActiveItem->UpdateItemInfo();
+		m_pNextItem = NULL;
+	}
 	g_irunninggausspred = false;
 }
 
@@ -736,7 +751,7 @@ void HUD_WeaponsPostThink(local_state_s* from, local_state_s* to, usercmd_t* cmd
 	player.pev->flags = from->client.flags;
 
 	player.pev->deadflag = from->client.deadflag;
-	player.pev->waterlevel = from->client.waterlevel;
+	g_iWaterLevel = player.pev->waterlevel = from->client.waterlevel; //LRC - for DMC fog
 	player.pev->maxspeed = from->client.maxspeed;
 	player.m_iFOV = from->client.fov;
 	player.pev->weaponanim = from->client.weaponanim;

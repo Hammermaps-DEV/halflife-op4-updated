@@ -115,6 +115,18 @@ public:
 	float m_fTurnRate;	 // actual turn rate
 	int m_iOrientation;	 // 0 = floor, 1 = Ceiling
 	bool m_iOn;
+	virtual STATE getState()
+	{
+		if (m_iOn)
+		{
+			return STATE_ON;
+		}
+		else
+		{
+			return STATE_OFF;
+		}
+	}
+
 	bool m_fBeserk;	   // Sometimes this bitch will just freak out
 	bool m_iAutoStart; // true if the turret auto deploys when a target
 					   // enters its range
@@ -246,7 +258,7 @@ bool CBaseTurret::KeyValue(KeyValueData* pkvd)
 void CBaseTurret::Spawn()
 {
 	Precache();
-	pev->nextthink = gpGlobals->time + 1;
+	SetNextThink(1);
 	pev->movetype = MOVETYPE_FLY;
 	pev->sequence = 0;
 	pev->frame = 0;
@@ -259,6 +271,12 @@ void CBaseTurret::Spawn()
 	if ((pev->spawnflags & SF_MONSTER_TURRET_AUTOACTIVATE) != 0 && (pev->spawnflags & SF_MONSTER_TURRET_STARTINACTIVE) == 0)
 	{
 		m_iAutoStart = true;
+	}
+
+	if (m_iOrientation == 1)
+	{
+		pev->idealpitch = 180;
+		pev->angles.x = 180;
 	}
 
 	ResetSequenceInfo();
@@ -290,8 +308,12 @@ void CBaseTurret::Precache()
 void CTurret::Spawn()
 {
 	Precache();
-	SET_MODEL(ENT(pev), "models/turret.mdl");
-	pev->health = gSkillData.turretHealth;
+	if (pev->model)
+		SET_MODEL(ENT(pev), STRING(pev->model)); //LRC
+	else
+		SET_MODEL(ENT(pev), "models/turret.mdl");
+	if (!pev->health)
+		pev->health = gSkillData.turretHealth;
 	m_HackedGunPos = Vector(0, 0, 12.75);
 	m_flMaxSpin = TURRET_MAXSPIN;
 	pev->view_ofs.z = 12.75;
@@ -310,21 +332,28 @@ void CTurret::Spawn()
 	m_pEyeGlow->SetAttachment(edict(), 2);
 	m_eyeBrightness = 0;
 
-	pev->nextthink = gpGlobals->time + 0.3;
+	SetNextThink(0.3);
 }
 
 void CTurret::Precache()
 {
 	CBaseTurret::Precache();
-	PRECACHE_MODEL("models/turret.mdl");
+	if (pev->model)
+		PRECACHE_MODEL((char*)STRING(pev->model)); //LRC
+	else
+		PRECACHE_MODEL("models/turret.mdl");
 	PRECACHE_MODEL(TURRET_GLOW_SPRITE);
 }
 
 void CMiniTurret::Spawn()
 {
 	Precache();
-	SET_MODEL(ENT(pev), "models/miniturret.mdl");
-	pev->health = gSkillData.miniturretHealth;
+	if (pev->model)
+		SET_MODEL(ENT(pev), STRING(pev->model)); //LRC
+	else
+		SET_MODEL(ENT(pev), "models/miniturret.mdl");
+	if (!pev->health)
+		pev->health = gSkillData.miniturretHealth;
 	m_HackedGunPos = Vector(0, 0, 12.75);
 	m_flMaxSpin = 0;
 	pev->view_ofs.z = 12.75;
@@ -336,14 +365,17 @@ void CMiniTurret::Spawn()
 	UTIL_SetSize(pev, Vector(-16, -16, -m_iRetractHeight), Vector(16, 16, m_iRetractHeight));
 
 	SetThink(&CMiniTurret::Initialize);
-	pev->nextthink = gpGlobals->time + 0.3;
+	SetNextThink(0.3);
 }
 
 
 void CMiniTurret::Precache()
 {
 	CBaseTurret::Precache();
-	PRECACHE_MODEL("models/miniturret.mdl");
+	if (pev->model)
+		PRECACHE_MODEL((char*)STRING(pev->model)); //LRC
+	else
+		PRECACHE_MODEL("models/miniturret.mdl");
 	PRECACHE_SOUND("weapons/hks1.wav");
 	PRECACHE_SOUND("weapons/hks2.wav");
 	PRECACHE_SOUND("weapons/hks3.wav");
@@ -365,8 +397,8 @@ void CBaseTurret::Initialize()
 	m_flStartYaw = pev->angles.y;
 	if (m_iOrientation == 1)
 	{
-		pev->idealpitch = 180;
-		pev->angles.x = 180;
+		//		pev->idealpitch = 180; //This is moved to CBaseTurret::Spawn for fix old bug in original HL. G-Cont.
+		//		pev->angles.x = 180;
 		pev->view_ofs.z = -pev->view_ofs.z;
 		pev->effects |= EF_INVLIGHT;
 		pev->angles.y = pev->angles.y + 180;
@@ -380,7 +412,7 @@ void CBaseTurret::Initialize()
 	{
 		m_flLastSight = gpGlobals->time + m_flMaxWait;
 		SetThink(&CBaseTurret::AutoSearchThink);
-		pev->nextthink = gpGlobals->time + .1;
+		SetNextThink(0.1);
 	}
 	else
 		SetThink(&CBaseTurret::SUB_DoNothing);
@@ -394,14 +426,14 @@ void CBaseTurret::TurretUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_T
 	if (m_iOn)
 	{
 		m_hEnemy = NULL;
-		pev->nextthink = gpGlobals->time + 0.1;
+		SetNextThink(0.1);
 		m_iAutoStart = false; // switching off a turret disables autostart
 		//!!!! this should spin down first!!BUGBUG
 		SetThink(&CBaseTurret::Retire);
 	}
 	else
 	{
-		pev->nextthink = gpGlobals->time + 0.1; // turn on delay
+		SetNextThink(0.1); // turn on delay
 
 		// if the turret is flagged as an autoactivate turret, re-enable it's ability open self.
 		if ((pev->spawnflags & SF_MONSTER_TURRET_AUTOACTIVATE) != 0)
@@ -463,7 +495,7 @@ void CBaseTurret::ActiveThink()
 	bool fAttack = false;
 	Vector vecDirToEnemy;
 
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 	StudioFrameAdvance();
 
 	UpdateShockEffect();
@@ -645,7 +677,7 @@ void CMiniTurret::Shoot(Vector& vecSrc, Vector& vecDirToEnemy)
 
 void CBaseTurret::Deploy()
 {
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 	StudioFrameAdvance();
 
 	if (pev->sequence != TURRET_ANIM_DEPLOY)
@@ -687,7 +719,7 @@ void CBaseTurret::Retire()
 	m_vecGoalAngles.x = 0;
 	m_vecGoalAngles.y = m_flStartYaw;
 
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 
 	StudioFrameAdvance();
 
@@ -716,7 +748,7 @@ void CBaseTurret::Retire()
 			if (m_iAutoStart)
 			{
 				SetThink(&CBaseTurret::AutoSearchThink);
-				pev->nextthink = gpGlobals->time + .1;
+				SetNextThink(0.1);
 			}
 			else
 				SetThink(&CBaseTurret::SUB_DoNothing);
@@ -732,7 +764,7 @@ void CBaseTurret::Retire()
 void CTurret::SpinUpCall()
 {
 	StudioFrameAdvance();
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 
 	// Are we already spun up? If not start the two stage process.
 	if (!m_iSpin)
@@ -741,7 +773,7 @@ void CTurret::SpinUpCall()
 		// for the first pass, spin up the the barrel
 		if (!m_iStartSpin)
 		{
-			pev->nextthink = gpGlobals->time + 1.0; // spinup delay
+			SetNextThink(1.0); // spinup delay
 			EMIT_SOUND(ENT(pev), CHAN_BODY, "turret/tu_spinup.wav", TURRET_MACHINE_VOLUME, ATTN_NORM);
 			m_iStartSpin = true;
 			pev->framerate = 0.1;
@@ -749,7 +781,7 @@ void CTurret::SpinUpCall()
 		// after the barrel is spun up, turn on the hum
 		else if (pev->framerate >= 1.0)
 		{
-			pev->nextthink = gpGlobals->time + 0.1; // retarget delay
+			SetNextThink(0.1); // retarget delay
 			EMIT_SOUND(ENT(pev), CHAN_STATIC, "turret/tu_active2.wav", TURRET_MACHINE_VOLUME, ATTN_NORM);
 			SetThink(&CTurret::ActiveThink);
 			m_iStartSpin = false;
@@ -834,7 +866,7 @@ void CBaseTurret::SearchThink()
 	// ensure rethink
 	SetTurretAnim(TURRET_ANIM_SPIN);
 	StudioFrameAdvance();
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 
 	UpdateShockEffect();
 
@@ -898,7 +930,7 @@ void CBaseTurret::AutoSearchThink()
 {
 	// ensure rethink
 	StudioFrameAdvance();
-	pev->nextthink = gpGlobals->time + 0.3;
+	SetNextThink(0.3);
 
 	UpdateShockEffect();
 
@@ -931,7 +963,7 @@ void CBaseTurret::TurretDeath()
 	bool iActive = false;
 
 	StudioFrameAdvance();
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 
 	if (pev->deadflag != DEAD_DEAD)
 	{
@@ -1036,7 +1068,7 @@ bool CBaseTurret::TakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, fl
 		SetUse(NULL);
 		SetThink(&CBaseTurret::TurretDeath);
 		SUB_UseTargets(this, USE_ON, 0); // wake up others
-		pev->nextthink = gpGlobals->time + 0.1;
+		SetNextThink(0.1);
 
 		return false;
 	}
@@ -1140,6 +1172,8 @@ bool CBaseTurret::MoveTurret()
 //
 int CBaseTurret::Classify()
 {
+	if (m_iClass)
+		return m_iClass;
 	if (m_iOn || m_iAutoStart)
 		return CLASS_MACHINE;
 	return CLASS_NONE;
@@ -1168,17 +1202,26 @@ LINK_ENTITY_TO_CLASS(monster_sentry, CSentry);
 void CSentry::Precache()
 {
 	CBaseTurret::Precache();
-	PRECACHE_MODEL("models/sentry.mdl");
+	if (pev->model)
+		PRECACHE_MODEL((char*)STRING(pev->model)); //LRC
+	else
+		PRECACHE_MODEL("models/sentry.mdl");
 }
 
 void CSentry::Spawn()
 {
 	Precache();
-	SET_MODEL(ENT(pev), "models/sentry.mdl");
-	pev->health = gSkillData.sentryHealth;
+	if (pev->model)
+		SET_MODEL(ENT(pev), STRING(pev->model)); //LRC
+	else
+		SET_MODEL(ENT(pev), "models/sentry.mdl");
+	if (!pev->health) //LRC
+		pev->health = gSkillData.sentryHealth;
 	m_HackedGunPos = Vector(0, 0, 48);
 	pev->view_ofs.z = 48;
-	m_flMaxWait = 1E6;
+	//m_flMaxWait = 1E6;
+	if (m_flMaxWait == 0)
+		m_flMaxWait = TURRET_MAXWAIT; //G-Cont. now sentry can deployed
 	m_flMaxSpin = 1E6;
 
 	CBaseTurret::Spawn();
@@ -1189,7 +1232,7 @@ void CSentry::Spawn()
 
 	SetTouch(&CSentry::SentryTouch);
 	SetThink(&CSentry::Initialize);
-	pev->nextthink = gpGlobals->time + 0.3;
+	SetNextThink(0.3);
 }
 
 void CSentry::Shoot(Vector& vecSrc, Vector& vecDirToEnemy)
@@ -1220,7 +1263,7 @@ bool CSentry::TakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, float 
 	{
 		SetThink(&CSentry::Deploy);
 		SetUse(NULL);
-		pev->nextthink = gpGlobals->time + 0.1;
+		SetNextThink(0.1);
 	}
 
 	pev->health -= flDamage;
@@ -1235,7 +1278,7 @@ bool CSentry::TakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, float 
 		SetUse(NULL);
 		SetThink(&CSentry::SentryDeath);
 		SUB_UseTargets(this, USE_ON, 0); // wake up others
-		pev->nextthink = gpGlobals->time + 0.1;
+		SetNextThink(0.1);
 
 		return false;
 	}
@@ -1258,7 +1301,7 @@ void CSentry::SentryDeath()
 	bool iActive = false;
 
 	StudioFrameAdvance();
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1);
 
 	if (pev->deadflag != DEAD_DEAD)
 	{

@@ -42,7 +42,6 @@ void Game_HookEvents()
 	gEngfuncs.pfnHookEvent("events/gauss.sc", EV_FireGauss);
 	gEngfuncs.pfnHookEvent("events/gaussspin.sc", EV_SpinGauss);
 	gEngfuncs.pfnHookEvent("events/train.sc", EV_TrainPitchAdjust);
-	gEngfuncs.pfnHookEvent("events/crowbar.sc", EV_Crowbar);
 	gEngfuncs.pfnHookEvent("events/crossbow1.sc", EV_FireCrossbow);
 	gEngfuncs.pfnHookEvent("events/crossbow2.sc", EV_FireCrossbow2);
 	gEngfuncs.pfnHookEvent("events/rpg.sc", EV_FireRpg);
@@ -60,4 +59,8 @@ void Game_HookEvents()
 	gEngfuncs.pfnHookEvent("events/sniper.sc", EV_SniperRifle);
 	gEngfuncs.pfnHookEvent("events/knife.sc", EV_Knife);
 	gEngfuncs.pfnHookEvent("events/penguinfire.sc", EV_PenguinFire);
+	gEngfuncs.pfnHookEvent("events/mirror.sc", EV_Mirror);
+	gEngfuncs.pfnHookEvent("events/generic1.sc", EV_GenericFire1);
+	gEngfuncs.pfnHookEvent("events/generic2.sc", EV_GenericFire2);
+	gEngfuncs.pfnHookEvent("events/generic3.sc", EV_GenericFire3);
 }

@@ -536,16 +536,26 @@ bool CHudAmmo::MsgFunc_HideWeapon(const char* pszName, int iSize, void* pbuf)
 	if (0 != gEngfuncs.IsSpectateOnly())
 		return true;
 
-	if ((gHUD.m_iHideHUDDisplay & (HIDEHUD_WEAPONS | HIDEHUD_ALL)) != 0)
+	//LRCT - experiment to allow a custom crosshair.
+	if (gHUD.m_iHideHUDDisplay & HIDEHUD_CUSTOMCROSSHAIR)
+	{
+		WEAPON* pWeapon = gWR.GetWeapon(4);
+		if (pWeapon)
+			SetCrosshair(pWeapon->hCrosshair, pWeapon->rcCrosshair, 255, 255, 255);
+		//		CONPRINT("Selecting custom crosshair");
+	}
+	else if ((m_pWeapon == NULL) || (gHUD.m_iHideHUDDisplay & (HIDEHUD_WEAPONS | HIDEHUD_ALL)) != 0)
 	{
 		static Rect nullrc;
 		gpActiveSel = NULL;
 		SetCrosshair(0, nullrc, 0, 0, 0);
+		//		CONPRINT("Blanking crosshair\n");
 	}
 	else
 	{
-		if (m_pWeapon)
-			SetCrosshair(m_pWeapon->hCrosshair, m_pWeapon->rcCrosshair, 255, 255, 255);
+		//if ( m_pWeapon )
+		SetCrosshair(m_pWeapon->hCrosshair, m_pWeapon->rcCrosshair, 255, 255, 255);
+		//		CONPRINT("Selecting weapon crosshair\n");
 	}
 
 	return true;
@@ -608,19 +618,28 @@ bool CHudAmmo::MsgFunc_CurWeapon(const char* pszName, int iSize, void* pbuf)
 
 	m_pWeapon = pWeapon;
 
-	if (gHUD.m_iFOV >= 90)
-	{ // normal crosshairs
-		if (fOnTarget && 0 != m_pWeapon->hAutoaim)
-			SetCrosshair(m_pWeapon->hAutoaim, m_pWeapon->rcAutoaim, 255, 255, 255);
-		else
-			SetCrosshair(m_pWeapon->hCrosshair, m_pWeapon->rcCrosshair, 255, 255, 255);
+	//LRCT - probably not the right way to do this...
+	if (gHUD.m_iHideHUDDisplay & (HIDEHUD_CUSTOMCROSSHAIR))
+	{
+		WEAPON* ccWeapon = gWR.GetWeapon(7);
+		SetCrosshair(ccWeapon->hCrosshair, ccWeapon->rcCrosshair, 255, 255, 255);
 	}
-	else
-	{ // zoomed crosshairs
-		if (fOnTarget && 0 != m_pWeapon->hZoomedAutoaim)
-			SetCrosshair(m_pWeapon->hZoomedAutoaim, m_pWeapon->rcZoomedAutoaim, 255, 255, 255);
+	else if (!(gHUD.m_iHideHUDDisplay & (HIDEHUD_WEAPONS | HIDEHUD_ALL)))
+	{
+		if (gHUD.m_iFOV >= 90)
+		{ // normal crosshairs
+			if (fOnTarget && 0 != m_pWeapon->hAutoaim)
+				SetCrosshair(m_pWeapon->hAutoaim, m_pWeapon->rcAutoaim, 255, 255, 255);
+			else
+				SetCrosshair(m_pWeapon->hCrosshair, m_pWeapon->rcCrosshair, 255, 255, 255);
+		}
 		else
-			SetCrosshair(m_pWeapon->hZoomedCrosshair, m_pWeapon->rcZoomedCrosshair, 255, 255, 255);
+		{ // zoomed crosshairs
+			if (fOnTarget && 0 != m_pWeapon->hZoomedAutoaim)
+				SetCrosshair(m_pWeapon->hZoomedAutoaim, m_pWeapon->rcZoomedAutoaim, 255, 255, 255);
+			else
+				SetCrosshair(m_pWeapon->hZoomedCrosshair, m_pWeapon->rcZoomedCrosshair, 255, 255, 255);
+		}
 	}
 
 	m_fFade = 200.0f; //!!!
@@ -845,7 +864,11 @@ bool CHudAmmo::Draw(float flTime)
 		return false;
 
 	if (!m_pWeapon)
+	{
+		//		CONPRINT("AmmoDraw: NO pWeapon\n");
 		return false;
+	}
+	//	CONPRINT("AmmoDraw: pWeapon ok\n");
 
 	WEAPON* pw = m_pWeapon; // shorthand
 
@@ -869,10 +892,7 @@ bool CHudAmmo::Draw(float flTime)
 	}
 	else
 	{
-		r = giR;
-		g = giG;
-		b = giB;
-
+		UnpackRGB(r, g, b, gHUD.m_iHUDColor);
 		ScaleColors(r, g, b, a);
 	}
 
@@ -907,9 +927,7 @@ bool CHudAmmo::Draw(float flTime)
 			}
 			else
 			{
-				r = giR;
-				g = giG;
-				b = giB;
+				UnpackRGB(r, g, b, gHUD.m_iHUDColor);
 			}
 
 			// draw the | bar
@@ -1002,9 +1020,7 @@ int DrawBar(int x, int y, int width, int height, float f)
 	}
 	else
 	{
-		r = giR;
-		g = giG;
-		b = giB;
+		UnpackRGB(r, g, b, gHUD.m_iHUDColor);
 	}
 
 	FillRGBA(x, y, width, height, r, g, b, 128);
@@ -1092,9 +1108,7 @@ bool CHudAmmo::DrawWList(float flTime)
 		}
 		else
 		{
-			r = giR;
-			g = giG;
-			b = giB;
+			UnpackRGB(r, g, b, gHUD.m_iHUDColor);
 			ScaleColors(r, g, b, 255);
 		}
 
@@ -1141,16 +1155,14 @@ bool CHudAmmo::DrawWList(float flTime)
 
 				if (!p || 0 == p->iId)
 					continue;
-
+				
 				if (gHUD.isNightVisionOn())
 				{
 					gHUD.getNightVisionHudItemColor(r, g, b);
 				}
 				else
 				{
-					r = giR;
-					g = giG;
-					b = giB;
+					UnpackRGB(r, g, b, gHUD.m_iHUDColor);
 				}
 
 				// if active, then we must have ammo.
@@ -1203,16 +1215,13 @@ bool CHudAmmo::DrawWList(float flTime)
 		else
 		{
 			// Draw Row of weapons.
-
 			if (gHUD.isNightVisionOn())
 			{
 				gHUD.getNightVisionHudItemColor(r, g, b);
 			}
 			else
 			{
-				r = giR;
-				g = giG;
-				b = giB;
+				UnpackRGB(r, g, b, gHUD.m_iHUDColor);
 			}
 
 			for (int iPos = 0; iPos < MAX_WEAPON_POSITIONS; iPos++)
@@ -1230,10 +1239,9 @@ bool CHudAmmo::DrawWList(float flTime)
 					}
 					else
 					{
-						r = giR;
-						g = giG;
-						b = giB;
+						UnpackRGB(r, g, b, gHUD.m_iHUDColor);
 					}
+					
 					a = 128;
 				}
 				else

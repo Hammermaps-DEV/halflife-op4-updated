@@ -89,6 +89,9 @@ enum sbar_data
 
 #define CHAT_INTERVAL 1.0f
 
+class CItemCamera; //AJH
+
+//NB: changing this structure will cause problems! --LRC
 class CBasePlayer : public CBaseMonster
 {
 public:
@@ -103,6 +106,10 @@ public:
 	int m_iObserverWeapon;	 // weapon of current tracked target
 	int m_iObserverLastMode; // last used observer mode
 	bool IsObserver() { return 0 != pev->iuser1; }
+
+	entvars_t* m_pevInflictor;	//AJH used for time based damage to remember inflictor
+								//m_hActivator remembers activator
+	CItemCamera* m_pItemCamera; //AJH Remember that we have a camera
 
 	int random_seed; // See that is shared between client & server for shared weapons code
 
@@ -228,6 +235,7 @@ public:
 	CBasePlayerItem* m_pActiveItem;
 	CBasePlayerItem* m_pClientActiveItem; // client version of the active item
 	CBasePlayerItem* m_pLastItem;
+	CBasePlayerItem* m_pNextItem;
 
 	std::uint64_t m_WeaponBits;
 
@@ -253,7 +261,7 @@ public:
 	void Spawn() override;
 	void Pain();
 
-	//	void Think() override;
+	//	virtual void Think();
 	virtual void Jump();
 	virtual void Duck();
 	virtual void PreThink();
@@ -263,7 +271,7 @@ public:
 	void TraceAttack(entvars_t* pevAttacker, float flDamage, Vector vecDir, TraceResult* ptr, int bitsDamageType) override;
 	bool TakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker, float flDamage, int bitsDamageType) override;
 	void Killed(entvars_t* pevAttacker, int iGib) override;
-	Vector BodyTarget(const Vector& posSrc) override { return Center() + pev->view_ofs * RANDOM_FLOAT(0.5, 1.1); } // position to shoot at
+	Vector BodyTarget(const Vector& posSrc) override { return Center() + pev->view_ofs * RANDOM_FLOAT(0.5, 1.1); }; // position to shoot at
 	void StartSneaking() override { m_tSneaking = gpGlobals->time - 1; }
 	void StopSneaking() override { m_tSneaking = gpGlobals->time + 30; }
 	bool IsSneaking() override { return m_tSneaking <= gpGlobals->time; }
@@ -280,6 +288,8 @@ public:
 	void RenewItems();
 	void PackDeadPlayerItems();
 	void RemoveAllItems(bool removeSuit);
+	void RemoveItems(uint64_t iWeaponMask, int i9mm, int i357, int iBuck, int iBolt, int iARGren, int iRock, int iEgon, int iSatchel, int iSnark, int iTrip, int iGren, int iHornet);
+	void RemoveAmmo(const char* szName, int iAmount);
 	bool SwitchWeapon(CBasePlayerItem* pWeapon);
 
 	/**
@@ -335,6 +345,7 @@ public:
 	void SelectNextItem(int iItem);
 	void SelectLastItem();
 	void SelectItem(const char* pstr);
+	void QueueItem(CBasePlayerItem* pItem);
 	void ItemPreFrame();
 	void ItemPostFrame();
 	void GiveNamedItem(const char* szName);
@@ -400,6 +411,12 @@ public:
 	bool Menu_Team_Input(int inp);
 	bool Menu_Char_Input(int inp);
 
+	// for trigger_viewset
+	int viewEntity;		 // string
+	int viewFlags;		 // 1-active, 2-draw hud
+	int viewNeedsUpdate; // precache sets to 1, UpdateClientData() sets to 0
+	float m_flNextChatTime;
+
 	void SetPrefsFromUserinfo(char* infobuffer);
 
 	int m_iAutoWepSwitch;
@@ -436,6 +453,19 @@ private:
 public:
 	//True if the player is currently spawning.
 	bool m_bIsSpawning = false;
+
+	int Rain_dripsPerSecond;
+	float Rain_windX, Rain_windY;
+	float Rain_randX, Rain_randY;
+
+	int Rain_ideal_dripsPerSecond;
+	float Rain_ideal_windX, Rain_ideal_windY;
+	float Rain_ideal_randX, Rain_ideal_randY;
+
+	float Rain_endFade; // 0 means off
+	float Rain_nextFadeUpdate;
+
+	int Rain_needsUpdate;
 };
 
 inline void CBasePlayer::SetWeaponBit(int id)
