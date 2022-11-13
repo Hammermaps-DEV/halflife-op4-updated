@@ -16,6 +16,8 @@
 //  cl_dll.h
 //
 
+#pragma once
+
 // 4-23-98  JOHN
 
 //
@@ -28,14 +30,13 @@
 
 #include "Platform.h"
 
-typedef unsigned char byte;
-typedef unsigned short word;
-typedef float vec_t;
-typedef int (*pfnUserMsgHook)(const char *pszName, int iSize, void *pbuf);
+typedef int (*pfnUserMsgHook)(const char* pszName, int iSize, void* pbuf);
 
-#include "util_vector.h"
+#include "mathlib.h"
 
 #include "../engine/cdll_int.h"
 #include "../dlls/cdll_dll.h"
 
 extern cl_enginefunc_t gEngfuncs;
+
+#define CONPRINT (gEngfuncs.Con_Printf) //LRC - I can't live without printf!
