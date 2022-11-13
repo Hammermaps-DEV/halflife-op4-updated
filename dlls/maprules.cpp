@@ -840,6 +840,12 @@ TYPEDESCRIPTION CGamePlayerEquip::m_SaveData[] =
 		DEFINE_ARRAY(CGamePlayerEquip, m_weaponCount, FIELD_INTEGER, MAX_EQUIP),
 };
 
+TYPEDESCRIPTION	CGamePlayerEquip::m_SaveData[] =
+{
+    DEFINE_ARRAY(CGamePlayerEquip, m_weaponNames, FIELD_STRING, MAX_EQUIP),
+    DEFINE_ARRAY(CGamePlayerEquip, m_weaponCount, FIELD_INTEGER, MAX_EQUIP),
+};
+
 IMPLEMENT_SAVERESTORE(CGamePlayerEquip, CRulePointEntity);
 
 bool CGamePlayerEquip::KeyValue(KeyValueData* pkvd)
