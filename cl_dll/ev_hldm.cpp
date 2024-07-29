@@ -29,6 +29,7 @@
 #include "weapons/CKnife.h"
 #include "weapons/CPenguin.h"
 
+#include "com_weapons.h"
 #include "const.h"
 #include "entity_state.h"
 #include "cl_entity.h"
@@ -204,6 +205,14 @@ float EV_HLDM_PlayTextureSound(int idx, pmtrace_t* ptr, float* vecSrc, float* ve
 		rgsz[1] = "weapons/bullet_hit2.wav";
 		fattn = 1.0;
 		cnt = 2;
+		break;
+	case CHAR_TEX_SNOW:
+		fvol = 0.9;
+		fvolbar = 0.1;
+		rgsz[0] = "player/pl_snow1.wav";
+		rgsz[1] = "player/pl_snow2.wav";
+		rgsz[2] = "player/pl_snow3.wav";
+		cnt = 3;
 		break;
 	}
 
@@ -1458,6 +1467,12 @@ void EV_EgonStop(event_args_t* args)
 			}
 
 			pFlare = NULL;
+		}
+
+		// HACK: only reset animation if the Egon is still equipped.
+		if (g_CurrentWeaponId == WEAPON_EGON)
+		{
+			gEngfuncs.pEventAPI->EV_WeaponAnimation(EGON_IDLE1, 0);
 		}
 	}
 }

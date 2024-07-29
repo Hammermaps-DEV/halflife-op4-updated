@@ -1409,6 +1409,7 @@ Schedule_t slTorchAllyCombatFail[] =
 Task_t tlTorchAllyVictoryDance[] =
 	{
 		{TASK_STOP_MOVING, (float)0},
+		{TASK_SET_ACTIVITY, (float)ACT_IDLE},
 		{TASK_FACE_ENEMY, (float)0},
 		{TASK_WAIT, (float)1.5},
 		{TASK_GET_PATH_TO_ENEMY_CORPSE, (float)0},
@@ -2753,6 +2754,11 @@ void COFTorchAlly::MonsterThink()
 class COFTorchAllyRepel : public CBaseMonster
 {
 public:
+	static TYPEDESCRIPTION m_SaveData[];
+
+	bool Save(CSave& save) override;
+	bool Restore(CRestore& restore) override;
+
 	bool KeyValue(KeyValueData* pkvd) override;
 
 	void Spawn() override;
@@ -2760,12 +2766,19 @@ public:
 	void EXPORT RepelUse(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useType, float value);
 	int m_iSpriteTexture; // Don't save, precache
 
-	//TODO: needs save/restore (not in op4)
 	int m_iszUse;
 	int m_iszUnUse;
 };
 
 LINK_ENTITY_TO_CLASS(monster_torch_ally_repel, COFTorchAllyRepel);
+
+TYPEDESCRIPTION COFTorchAllyRepel::m_SaveData[] =
+	{
+		DEFINE_FIELD(COFTorchAllyRepel, m_iszUse, FIELD_STRING),
+		DEFINE_FIELD(COFTorchAllyRepel, m_iszUnUse, FIELD_STRING),
+};
+
+IMPLEMENT_SAVERESTORE(COFTorchAllyRepel, CBaseMonster);
 
 bool COFTorchAllyRepel::KeyValue(KeyValueData* pkvd)
 {

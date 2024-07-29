@@ -1,4 +1,4 @@
-//========= Copyright (c) 1996-2002, Valve LLC, All rights reserved. ============
+//========= Copyright © 1996-2002, Valve LLC, All rights reserved. ============
 //
 // Purpose:
 //
@@ -30,6 +30,8 @@
 
 #include <SDL2/SDL_mouse.h>
 #include <SDL2/SDL_gamecontroller.h>
+
+void IN_ResetMouse();
 
 #define MOUSE_BUTTON_COUNT 5
 
@@ -65,6 +67,16 @@ static cvar_t* m_rawinput = nullptr;
 static bool IN_UseRawInput()
 {
 	return m_rawinput->value != 0;
+}
+
+static SDL_bool mouseRelative = SDL_TRUE;
+
+static void IN_SetMouseRelative(bool enable)
+{
+	const SDL_bool value = enable ? SDL_TRUE : SDL_FALSE;
+
+	SDL_SetRelativeMouseMode(value);
+	mouseRelative = value;
 }
 
 static bool m_bMouseThread = false;
@@ -159,77 +171,6 @@ cvar_t* joy_wwhack2;
 
 bool joy_avail, joy_advancedinit, joy_haspov;
 
-float g_clampMinYaw = 0;
-float g_clampMaxYaw = 360;
-float g_clampMinPitch = -90;
-float g_clampMaxPitch = 90;
-float g_clampTurnSpeed = 1E6;
-
-//LRC 1.8
-float V_ClampYaw(float oldYaw, float proposedYaw)
-{
-	float wrapYaw = 0;
-
-	// are we actually doing any clamping?
-	if (g_clampMaxYaw - g_clampMinYaw >= 360)
-		return proposedYaw;
-
-	// awkwardly, yaw wraps; find the correct frame of reference
-	while (oldYaw + wrapYaw > g_clampMaxYaw)
-		wrapYaw -= 360;
-
-	while (oldYaw + wrapYaw < g_clampMinYaw)
-		wrapYaw += 360;
-
-	if (proposedYaw + wrapYaw >= g_clampMinYaw && proposedYaw + wrapYaw <= g_clampMaxYaw)
-		return proposedYaw + wrapYaw; // ok, that's in range
-
-	// proposedYaw is out of range, we need to return one of the endpoints.
-	// return the endpoint that's closest to the _old_ yaw.
-	// so that you can't jump over to the other side of the clamped zone with a big mouse move)
-	if (fabs(oldYaw + wrapYaw - g_clampMinYaw) > fabs(oldYaw + wrapYaw - g_clampMaxYaw))
-	{
-		return g_clampMaxYaw - 0.01; // this gets quantized; offset to prevent rounding errors
-	}
-	else
-	{
-		return g_clampMinYaw + 0.01;
-	}
-}
-
-//LRC 1.8
-float V_ClampPitch(float oldPitch, float proposedPitch)
-{
-	// are we actually doing any clamping?
-	if (g_clampMaxPitch - g_clampMinPitch >= 180)
-		return proposedPitch;
-
-	if (proposedPitch < g_clampMinPitch)
-		return g_clampMinPitch;
-	else if (proposedPitch > g_clampMaxPitch)
-		return g_clampMaxPitch;
-	else
-		return proposedPitch;
-}
-
-//LRC 1.8
-Vector V_LimitClampSpeed(Vector& prev, Vector& next, float frametime)
-{
-	Vector offset(next[PITCH] - prev[PITCH], next[YAW] - prev[YAW], 0.0f);
-
-	while (offset[YAW] > 180)
-		offset[YAW] -= 360;
-	while (offset[YAW] < -180)
-		offset[YAW] += 360;
-
-	if (offset.Length() > g_clampTurnSpeed * frametime)
-	{
-		offset = offset.Normalize() * (g_clampTurnSpeed * frametime);
-	}
-
-	return prev + offset;
-}
-
 /*
 ===========
 Force_CenterView_f
@@ -257,8 +198,6 @@ struct MouseThread
 };
 
 MouseThread s_MouseThread;
-
-SDL_bool mouseRelative = SDL_TRUE;
 
 std::atomic<Point> s_mouseDelta;
 std::atomic<Point> current_pos;
@@ -327,20 +266,21 @@ void DLLEXPORT IN_ActivateMouse()
 		mouseactive = true;
 	}
 
+	if (g_iVisibleMouse
 #ifdef WIN32
-	if (!IN_UseRawInput())
+		|| !IN_UseRawInput()
+#endif
+	)
 	{
-		SDL_SetRelativeMouseMode(SDL_FALSE);
-		mouseRelative = SDL_FALSE;
+		IN_SetMouseRelative(false);
 	}
 	else
 	{
-		mouseRelative = SDL_TRUE;
-		SDL_SetRelativeMouseMode(SDL_TRUE);
+		IN_SetMouseRelative(true);
 	}
-#else
-	SDL_SetRelativeMouseMode(SDL_TRUE);
-#endif
+
+	// Clear out accumulated mouse input from main menu movement.
+	IN_ResetMouse();
 }
 
 
@@ -362,14 +302,7 @@ void DLLEXPORT IN_DeactivateMouse()
 		mouseactive = false;
 	}
 
-#ifdef WIN32
-	if (IN_UseRawInput())
-	{
-		mouseRelative = SDL_FALSE;
-	}
-
-#endif
-	SDL_SetRelativeMouseMode(SDL_FALSE);
+	IN_SetMouseRelative(false);
 }
 
 /*
@@ -456,10 +389,9 @@ void IN_ResetMouse()
 {
 	// no work to do in SDL
 #ifdef WIN32
-	if (IN_UseRawInput())
+	if (IN_UseRawInput() && !g_iVisibleMouse)
 	{
-		mouseRelative = SDL_TRUE;
-		SDL_SetRelativeMouseMode(SDL_TRUE);
+		IN_SetMouseRelative(true);
 	}
 
 	if (!IN_UseRawInput() && mouseactive && gEngfuncs.GetWindowCenterX && gEngfuncs.GetWindowCenterY)
@@ -561,10 +493,8 @@ void IN_MouseMove(float frametime, usercmd_t* cmd)
 {
 	Point pos;
 	Vector viewangles;
-	Vector oldviewangles;
 
 	gEngfuncs.GetViewAngles((float*)viewangles);
-	oldviewangles = viewangles; //LRC 1.8
 
 	if ((in_mlook.state & 1) != 0)
 	{
@@ -669,22 +599,16 @@ void IN_MouseMove(float frametime, usercmd_t* cmd)
 		}
 	}
 
-	viewangles[YAW] = V_ClampYaw(oldviewangles[YAW], viewangles[YAW]);		   //LRC 1.8
-	viewangles[PITCH] = V_ClampPitch(oldviewangles[PITCH], viewangles[PITCH]); //LRC 1.8
-	viewangles = V_LimitClampSpeed(oldviewangles, viewangles, frametime);
-
 	gEngfuncs.SetViewAngles((float*)viewangles);
 
 #ifdef WIN32
-	if (!IN_UseRawInput() && SDL_FALSE != mouseRelative)
+	if ((!IN_UseRawInput() && SDL_FALSE != mouseRelative) || g_iVisibleMouse)
 	{
-		SDL_SetRelativeMouseMode(SDL_FALSE);
-		mouseRelative = SDL_FALSE;
+		IN_SetMouseRelative(false);
 	}
 	else if (IN_UseRawInput() && SDL_FALSE == mouseRelative)
 	{
-		SDL_SetRelativeMouseMode(SDL_TRUE);
-		mouseRelative = SDL_TRUE;
+		IN_SetMouseRelative(true);
 	}
 #endif
 
@@ -975,10 +899,9 @@ void IN_JoyMove(float frametime, usercmd_t* cmd)
 	float fAxisValue, fTemp;
 	int i;
 	Vector viewangles;
-	Vector oldviewangles;
 
 	gEngfuncs.GetViewAngles((float*)viewangles);
-	oldviewangles = viewangles; //LRC 1.8
+
 
 	// complete initialization if first time in
 	// this is needed as cvars are not available at initialization time
@@ -1147,8 +1070,6 @@ void IN_JoyMove(float frametime, usercmd_t* cmd)
 		viewangles[PITCH] = cl_pitchdown->value;
 	if (viewangles[PITCH] < -cl_pitchup->value)
 		viewangles[PITCH] = -cl_pitchup->value;
-
-	viewangles[YAW] = V_ClampYaw(oldviewangles[YAW], viewangles[YAW]); //LRC 1.8
 
 	gEngfuncs.SetViewAngles((float*)viewangles);
 }

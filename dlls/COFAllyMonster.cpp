@@ -1160,7 +1160,7 @@ bool COFAllyMonster::TakeDamage(entvars_t* pevInflictor, entvars_t* pevAttacker,
 		{
 			CBaseEntity* pFriend = FindNearestFriend(false);
 
-			if (pFriend && pFriend->IsAlive())
+			if (pFriend && pFriend->IsAlive() && pFriend->pev->deadflag == DEAD_NO)
 			{
 				// only if not dead or dying!
 				COFAllyMonster* pTalkMonster = (COFAllyMonster*)pFriend;
@@ -1363,7 +1363,10 @@ bool COFAllyMonster::CanFollow()
 {
 	if (m_MonsterState == MONSTERSTATE_SCRIPT)
 	{
-		if (!m_pCine->CanInterrupt())
+		// It's possible for m_MonsterState to still be MONSTERSTATE_SCRIPT when the script has already ended.
+		// We'll treat a null pointer as an uninterruptable script and wait for the NPC to change states
+		// before allowing players to make them follow them again.
+		if (!m_pCine || !m_pCine->CanInterrupt())
 			return false;
 	}
 

@@ -1335,6 +1335,13 @@ void V_GetDirectedChasePosition(cl_entity_t* ent1, cl_entity_t* ent2, float* ang
 
 void V_GetChasePos(cl_entity_t* ent, float* cl_angles, float* origin, float* angles)
 {
+	cl_entity_t* ent = NULL;
+
+	if (0 != target)
+	{
+		ent = gEngfuncs.GetEntityByIndex(target);
+	}
+
 	if (!ent)
 	{
 		// just copy a save in-map position
@@ -1387,7 +1394,7 @@ void V_GetInEyePos(int target, float* origin, float* angles)
 		VectorCopy(vJumpAngles, angles);
 		VectorCopy(vJumpOrigin, origin);
 		return;
-	};
+	}
 
 
 	cl_entity_t* ent = gEngfuncs.GetEntityByIndex(target);

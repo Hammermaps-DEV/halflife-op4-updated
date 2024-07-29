@@ -508,6 +508,12 @@ void CRpg::SecondaryAttack()
 
 void CRpg::WeaponIdle()
 {
+	// Reset when the player lets go of the trigger.
+	if ((m_pPlayer->pev->button & (IN_ATTACK | IN_ATTACK2)) == 0)
+	{
+		ResetEmptySound();
+	}
+
 	UpdateSpot();
 
 	if (m_flTimeWeaponIdle > UTIL_WeaponTimeBase())
@@ -536,7 +542,6 @@ void CRpg::WeaponIdle()
 			m_flTimeWeaponIdle = UTIL_WeaponTimeBase() + 6.1;
 		}
 
-		ResetEmptySound();
 		SendWeaponAnim(iAnim);
 	}
 	else
@@ -551,6 +556,12 @@ void CRpg::UpdateSpot()
 {
 
 #ifndef CLIENT_DLL
+	// Don't turn on the laser if we're in the middle of a reload.
+	if (m_fInReload)
+	{
+		return;
+	}
+
 	if (m_fSpotActive)
 	{
 		if (!m_pSpot)
@@ -569,7 +580,6 @@ void CRpg::UpdateSpot()
 	}
 #endif
 }
-
 
 class CRpgAmmo : public CBasePlayerAmmo
 {

@@ -18,7 +18,6 @@ CTF_OBJ_DIR=$(HLDLL_OBJ_DIR)/ctf
 ROPE_OBJ_DIR=$(HLDLL_OBJ_DIR)/rope
 WEAPONS_OBJ_DIR=$(HLDLL_OBJ_DIR)/weapons
 
-HLDLL_LIB_NAME=spirit
 CFLAGS=$(BASE_CFLAGS)  $(ARCH_CFLAGS)
 
 INCLUDEDIRS=-I$(HLDLL_SRC_DIR) -I$(ENGINE_SRC_DIR) -I$(COMMON_SRC_DIR) -I$(PM_SRC_DIR) -I$(GAME_SHARED_SRC_DIR) -I$(PUBLIC_SRC_DIR)
@@ -66,7 +65,6 @@ HLDLL_OBJS = \
 	$(HLDLL_OBJ_DIR)/aflock.o \
 	$(HLDLL_OBJ_DIR)/agrunt.o \
 	$(HLDLL_OBJ_DIR)/airtank.o \
-	$(HLDLL_OBJ_DIR)/alias.o \
 	$(HLDLL_OBJ_DIR)/animating.o \
 	$(HLDLL_OBJ_DIR)/animation.o \
 	$(HLDLL_OBJ_DIR)/apache.o \
@@ -94,7 +92,6 @@ HLDLL_OBJS = \
 	$(HLDLL_OBJ_DIR)/crossbow.o \
 	$(HLDLL_OBJ_DIR)/crowbar.o \
 	$(HLDLL_OBJ_DIR)/defaultai.o \
-	$(HLDLL_OBJ_DIR)/debugger.o \
 	$(HLDLL_OBJ_DIR)/doors.o \
 	$(HLDLL_OBJ_DIR)/effects.o \
 	$(HLDLL_OBJ_DIR)/ehandle.o \
@@ -137,13 +134,11 @@ HLDLL_OBJS = \
 	$(HLDLL_OBJ_DIR)/lights.o \
 	$(HLDLL_OBJ_DIR)/loader.o \
 	$(HLDLL_OBJ_DIR)/male_assassin.o \
-	$(HLDLL_OBJ_DIR)/locus.o \
 	$(HLDLL_OBJ_DIR)/maprules.o \
 	$(HLDLL_OBJ_DIR)/monstermaker.o \
 	$(HLDLL_OBJ_DIR)/monsters.o \
 	$(HLDLL_OBJ_DIR)/monsterstate.o \
 	$(HLDLL_OBJ_DIR)/mortar.o \
-	$(HLDLL_OBJ_DIR)/movewith.o \
 	$(HLDLL_OBJ_DIR)/mp5.o \
 	$(HLDLL_OBJ_DIR)/nihilanth.o \
 	$(HLDLL_OBJ_DIR)/nodes.o \
@@ -213,7 +208,7 @@ PUBLIC_OBJS = \
 COMMON_OBJS = \
 	$(COMMON_OBJ_DIR)/mathlib.o
 
-all: dirs $(HLDLL_LIB_NAME).$(SHLIBEXT)
+all: dirs hl.$(SHLIBEXT)
 
 dirs:
 	-mkdir -p $(BUILD_OBJ_DIR)
@@ -226,9 +221,9 @@ dirs:
 	-mkdir -p $(ROPE_OBJ_DIR)
 	-mkdir -p $(WEAPONS_OBJ_DIR)
 
-$(HLDLL_LIB_NAME).$(SHLIBEXT): $(HLDLL_OBJS) $(PM_OBJS) $(GAME_SHARED_OBJS) $(PUBLIC_OBJS) $(COMMON_OBJS)
-	$(CPLUS) $(LDFLAGS) $(CPP_LIB) $(SHLIBLDFLAGS) -o $(BUILD_DIR)/$@ $(HLDLL_OBJS) $(PM_OBJS) $(GAME_SHARED_OBJS) $(PUBLIC_OBJS) $(COMMON_OBJS)
-	./gendbg.sh $(BUILD_DIR)/$(HLDLL_LIB_NAME).$(SHLIBEXT)
+hl.$(SHLIBEXT): $(HLDLL_OBJS) $(PM_OBJS) $(GAME_SHARED_OBJS) $(PUBLIC_OBJS) $(COMMON_OBJS)
+	$(CPLUS) $(LDFLAGS) $(SHLIBLDFLAGS) -o $(BUILD_DIR)/$@ $(HLDLL_OBJS) $(PM_OBJS) $(GAME_SHARED_OBJS) $(PUBLIC_OBJS) $(COMMON_OBJS) $(CPP_LIB)
+	./gendbg.sh $(BUILD_DIR)/hl.$(SHLIBEXT)
 
 $(HLDLL_OBJ_DIR)/%.o : $(HLDLL_SRC_DIR)/%.cpp
 	$(DO_CC)

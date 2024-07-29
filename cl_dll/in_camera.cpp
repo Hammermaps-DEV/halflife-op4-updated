@@ -1,4 +1,4 @@
-//========= Copyright (c) 1996-2002, Valve LLC, All rights reserved. ============
+//========= Copyright © 1996-2002, Valve LLC, All rights reserved. ============
 // New clipping style camera - original idea by Xwider
 // Purpose:
 //

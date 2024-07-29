@@ -22,6 +22,7 @@
 #include "usercmd.h"
 #include "pm_defs.h"
 #include "pm_shared.h"
+#include "pm_materials.h"
 #include "pm_movevars.h"
 #include "pm_debug.h"
 #include <stdio.h>	// NULL
@@ -82,21 +83,6 @@ typedef struct hull_s
 #define STUCK_MOVEDOWN -1
 #define STOP_EPSILON 0.1
 
-#define CTEXTURESMAX 512	// max number of textures loaded
-#define CBTEXTURENAMEMAX 13 // only load first n chars of name
-
-#define CHAR_TEX_CONCRETE 'C' // texture types
-#define CHAR_TEX_METAL 'M'
-#define CHAR_TEX_DIRT 'D'
-#define CHAR_TEX_VENT 'V'
-#define CHAR_TEX_GRATE 'G'
-#define CHAR_TEX_TILE 'T'
-#define CHAR_TEX_SLOSH 'S'
-#define CHAR_TEX_WOOD 'W'
-#define CHAR_TEX_COMPUTER 'P'
-#define CHAR_TEX_GLASS 'Y'
-#define CHAR_TEX_FLESH 'F'
-
 #define STEP_CONCRETE 0 // default step sound
 #define STEP_METAL 1	// metal floor
 #define STEP_DIRT 2		// dirt, sand, rock
@@ -106,6 +92,7 @@ typedef struct hull_s
 #define STEP_SLOSH 6	// shallow liquid puddle
 #define STEP_WADE 7		// wading in liquid
 #define STEP_LADDER 8	// climbing ladder
+#define STEP_SNOW 9		// snow
 
 #define PLAYER_FATAL_FALL_SPEED 1024															  // approx 60 feet
 #define PLAYER_MAX_SAFE_FALL_SPEED 580															  // approx 20 feet
@@ -268,7 +255,7 @@ void PM_InitTextureTypes()
 	bTextureTypeInit = true;
 }
 
-char PM_FindTextureType(char* name)
+char PM_FindTextureType(const char* name)
 {
 	int left, right, pivot;
 	int val;
@@ -599,6 +586,25 @@ void PM_PlayStepSound(int step, float fvol)
 			break;
 		}
 		break;
+	case STEP_SNOW:
+		switch (irand)
+		{
+		// right foot
+		case 0:
+			pmove->PM_PlaySound(CHAN_BODY, "player/pl_snow1.wav", fvol, ATTN_NORM, 0, PITCH_NORM);
+			break;
+		case 1:
+			pmove->PM_PlaySound(CHAN_BODY, "player/pl_snow3.wav", fvol, ATTN_NORM, 0, PITCH_NORM);
+			break;
+		// left foot
+		case 2:
+			pmove->PM_PlaySound(CHAN_BODY, "player/pl_snow2.wav", fvol, ATTN_NORM, 0, PITCH_NORM);
+			break;
+		case 3:
+			pmove->PM_PlaySound(CHAN_BODY, "player/pl_snow4.wav", fvol, ATTN_NORM, 0, PITCH_NORM);
+			break;
+		}
+		break;
 	}
 }
 
@@ -621,6 +627,8 @@ int PM_MapTextureTypeStepType(char chTextureType)
 		return STEP_TILE;
 	case CHAR_TEX_SLOSH:
 		return STEP_SLOSH;
+	case CHAR_TEX_SNOW:
+		return STEP_SNOW;
 	}
 }
 
@@ -2625,6 +2633,13 @@ void PM_NoClip()
 //-----------------------------------------------------------------------------
 void PM_PreventMegaBunnyJumping()
 {
+	const bool allowBunnyHopping = atoi(pmove->PM_Info_ValueForKey(pmove->physinfo, "bj")) == 1;
+
+	if (allowBunnyHopping)
+	{
+		return;
+	}
+
 	// Current player speed
 	float spd;
 	// If we have to crop, apply this cropping fraction to velocity
@@ -2738,13 +2753,17 @@ void PM_Jump()
 
 	PM_PreventMegaBunnyJumping();
 
-	if (tfc)
+	// Don't play jump sounds while frozen.
+	if ((pmove->flags & FL_FROZEN) == 0)
 	{
-		pmove->PM_PlaySound(CHAN_BODY, "player/plyrjmp8.wav", 0.5, ATTN_NORM, 0, PITCH_NORM);
-	}
-	else
-	{
-		PM_PlayStepSound(PM_MapTextureTypeStepType(pmove->chtexturetype), 1.0);
+		if (tfc)
+		{
+			pmove->PM_PlaySound(CHAN_BODY, "player/plyrjmp8.wav", 0.5, ATTN_NORM, 0, PITCH_NORM);
+		}
+		else
+		{
+			PM_PlayStepSound(PM_MapTextureTypeStepType(pmove->chtexturetype), 1.0);
+		}
 	}
 
 	// See if user can super long jump?
@@ -3523,8 +3542,8 @@ void PM_Move(struct playermove_s* ppmove, qboolean server)
 		pmove->flags &= ~FL_ONGROUND;
 	}
 
-	// In single player, reset friction after each movement to FrictionModifier Triggers work still.
-	if (0 == pmove->multiplayer && (pmove->movetype == MOVETYPE_WALK))
+	// Reset friction after each movement so FrictionModifier Triggers work still.
+	if (pmove->movetype == MOVETYPE_WALK)
 	{
 		pmove->friction = 1.0f;
 	}

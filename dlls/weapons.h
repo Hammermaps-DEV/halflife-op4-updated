@@ -366,7 +366,7 @@ public:
 	virtual bool ExtractClipAmmo(CBasePlayerWeapon* pWeapon); // { return true; }			// Return true if you can add ammo to yourself when picked up
 
 	// generic "shared" ammo handlers
-	bool AddPrimaryAmmo(int iCount, char* szName, int iMaxClip, int iMaxCarry);
+	bool AddPrimaryAmmo(CBasePlayerWeapon* origin, int iCount, char* szName, int iMaxClip, int iMaxCarry);
 	bool AddSecondaryAmmo(int iCount, char* szName, int iMaxCarry);
 
 	void UpdateItemInfo() override {} // updates HUD state
@@ -1089,6 +1089,12 @@ enum hgun_e
 class CHgun : public CBasePlayerWeapon
 {
 public:
+#ifndef CLIENT_DLL
+	bool Save(CSave& save) override;
+	bool Restore(CRestore& restore) override;
+	static TYPEDESCRIPTION m_SaveData[];
+#endif
+
 	void Spawn() override;
 	void Precache() override;
 	bool GetItemInfo(ItemInfo* p) override;
