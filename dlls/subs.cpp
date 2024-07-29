@@ -743,7 +743,7 @@ After moving, set origin to exact final destination, call "move done" function
 		// HACK: not there yet, try waiting one more frame.
 		ALERT(at_console,"Rejecting difference %f\n",vecDiff.Length());
 		SetThink(LinearMoveFinalDone);
-		pev->nextthink = gpGlobals->time + 0.01;
+		SetNextThink(0.01f);
 	}
 	else
 	{

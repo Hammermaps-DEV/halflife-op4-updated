@@ -128,7 +128,7 @@ void COFNuclearBombTimer::NuclearBombTimerThink()
 		bBombSoundPlaying = true;
 	}
 
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1f);
 }
 
 void COFNuclearBombTimer::SetNuclearBombTimer(bool fOn)
@@ -142,7 +142,7 @@ void COFNuclearBombTimer::SetNuclearBombTimer(bool fOn)
 	else
 	{
 		SetThink(nullptr);
-		pev->nextthink = gpGlobals->time;
+		SetNextThink(0.0f);
 
 		pev->skin = 3;
 

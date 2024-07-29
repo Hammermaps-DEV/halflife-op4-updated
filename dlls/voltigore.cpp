@@ -1289,7 +1289,7 @@ void COFVoltigore::CallDeathGibThink()
 
 void COFVoltigore::DeathGibThink()
 {
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1f);
 	DispatchAnimEvents(0.1);
 	StudioFrameAdvance(0.0);
 

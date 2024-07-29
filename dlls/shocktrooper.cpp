@@ -321,7 +321,7 @@ void CShockTrooper::GibMonster()
 
 	// don't remove players!
 	SetThink(&CBaseMonster::SUB_Remove);
-	pev->nextthink = gpGlobals->time;
+	SetNextThink(0.0f);
 }
 
 //=========================================================

@@ -276,7 +276,7 @@ void CEnvState::Use(CBaseEntity* pActivator, CBaseEntity* pCaller, USE_TYPE useT
 		break;
 	case STATE_OFF:
 	case STATE_TURN_OFF:
-		if (m_fTurnOnTime)
+		if (static_cast<bool>(m_fTurnOnTime))
 		{
 			m_iState = STATE_TURN_ON;
 			if (pev->spawnflags & SF_ENVSTATE_DEBUG)

@@ -4719,7 +4719,7 @@ void CEnvSky ::Activate()
 {
 	UTIL_DesiredAction(this);
 	pev->effects |= EF_NODRAW;
-	pev->nextthink = gpGlobals->time + 1.0;
+	SetNextThink(1.0f);
 }
 
 extern int gmsgSetSky;

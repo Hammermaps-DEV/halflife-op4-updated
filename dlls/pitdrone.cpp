@@ -129,7 +129,7 @@ void CPitdroneSpike::Shoot(entvars_t* pevOwner, Vector vecStart, Vector vecVeloc
 	pSpit->pev->owner = ENT(pevOwner);
 
 	pSpit->SetThink(&CPitdroneSpike::StartTrail);
-	pSpit->pev->nextthink = gpGlobals->time + 0.1;
+	pSpit->SetNextThink(0.1f);
 }
 
 void CPitdroneSpike::SpikeTouch(CBaseEntity* pOther)
@@ -177,7 +177,7 @@ void CPitdroneSpike::SpikeTouch(CBaseEntity* pOther)
 	{
 		//Hit something else, remove
 		SetThink(&CBaseEntity::SUB_Remove);
-		pev->nextthink = gpGlobals->time + 0.1;
+		SetNextThink(0.1f);
 	}
 }
 
@@ -1207,7 +1207,7 @@ void CPitdrone::GibMonster()
 
 	// don't remove players!
 	SetThink(&CBaseMonster::SUB_Remove);
-	pev->nextthink = gpGlobals->time;
+	SetNextThink(0.0f);
 }
 
 bool CPitdrone::KeyValue(KeyValueData* pkvd)

@@ -229,7 +229,7 @@ void CRope::Spawn()
 
 	InitializeRopeSim();
 
-	pev->nextthink = gpGlobals->time + 0.01;
+	SetNextThink(0.01f);
 }
 
 void CRope::Think()

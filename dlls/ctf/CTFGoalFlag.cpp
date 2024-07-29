@@ -71,7 +71,7 @@ void CTFGoalFlag::ReturnFlag()
 	SetTouch(nullptr);
 	SetThink(nullptr);
 
-	pev->nextthink = gpGlobals->time;
+	SetNextThink(0.0f);
 
 	m_iGoalState = 1;
 	pev->solid = SOLID_TRIGGER;
@@ -263,7 +263,7 @@ void CTFGoalFlag::Spawn()
 			SetTouch(&CTFGoalFlag::goal_item_touch);
 			SetThink(&CTFGoalFlag::PlaceItem);
 
-			pev->nextthink = gpGlobals->time + 0.2;
+			SetNextThink(0.2f);
 		}
 	}
 	else
@@ -298,7 +298,7 @@ void CTFGoalFlag::ReturnFlagThink()
 void CTFGoalFlag::StartItem()
 {
 	SetThink(&CTFGoalFlag::PlaceItem);
-	pev->nextthink = gpGlobals->time + 0.2;
+	SetNextThink(0.2f);
 }
 
 void CTFGoalFlag::ScoreFlagTouch(CBasePlayer* pPlayer)
@@ -550,7 +550,7 @@ void CTFGoalFlag::GiveFlagToPlayer(CBasePlayer* pPlayer)
 	SetTouch(nullptr);
 	SetThink(nullptr);
 
-	pev->nextthink = gpGlobals->time;
+	SetNextThink(0.0f);
 	pev->owner = pPlayer->edict();
 	pev->movetype = MOVETYPE_FOLLOW;
 	pev->aiment = pPlayer->edict();
@@ -583,7 +583,7 @@ void CTFGoalFlag::GiveFlagToPlayer(CBasePlayer* pPlayer)
 	ScoreFlagTouch(pPlayer);
 
 	SetThink(&CTFGoalFlag::FlagCarryThink);
-	pev->nextthink = gpGlobals->time + 0.1;
+	SetNextThink(0.1f);
 
 	++pPlayer->m_iCTFScore;
 	++pPlayer->m_iOffense;

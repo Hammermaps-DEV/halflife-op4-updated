@@ -408,7 +408,7 @@ void COFFuncTank::StopControl()
 
 	m_pController->m_iHideHUD &= ~HIDEHUD_WEAPONS;
 
-	pev->nextthink = 0;
+	DontThink();
 	m_pController = NULL;
 
 	if (IsActive())
@@ -1011,8 +1011,8 @@ void COFFuncTankLaser::Fire(const Vector& barrelEnd, const Vector& forward, entv
 				m_laserTime = gpGlobals->time;
 				m_pLaser->TurnOn();
 				m_pLaser->pev->dmgtime = gpGlobals->time - 1.0;
-				m_pLaser->FireAtPoint(tr);
-				m_pLaser->pev->nextthink = 0;
+				m_pLaser->FireAtPoint(pev->angles,tr);
+				m_pLaser->DontThink();
 			}
 			COFFuncTank::Fire(barrelEnd, forward, pev);
 		}
